@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>读墨 · macOS</title>
+<style>
+  :root {
+    --bg: #ececec;
+    --window: rgba(246, 246, 246, 0.85);
+    --sidebar: rgba(236, 236, 236, 0.6);
+    --card: #ffffff;
+    --text: #1c1c1a;
+    --text-soft: #5a5853;
+    --text-faint: #95918a;
+    --line: rgba(0, 0, 0, 0.08);
+    --line-soft: rgba(0, 0, 0, 0.04);
+    --accent: #4a7a3e;
+    --accent-soft: #eaf2e8;
+    --highlight: #fdf5e6;
+    --traffic-red: #ff5f57;
+    --traffic-yellow: #febc2e;
+    --traffic-green: #28c840;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+    background: linear-gradient(135deg, #c8d4c8 0%, #d8c8b8 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 顶部菜单栏（mac 状态栏） */
+  .macos-menubar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: 12px;
+    color: var(--text);
+    z-index: 1000;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+
+  .menubar-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-weight: 500;
+  }
+
+  .menubar-apple { font-size: 14px; }
+
+  .menubar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+  }
+
+  .menubar-app-icon {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .menubar-app-icon:hover { background: rgba(0,0,0,0.05); }
+  .menubar-app-icon.active { background: rgba(0,0,0,0.08); }
+
+  .menubar-app-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  /* 菜单栏下拉气泡 */
+  .menubar-popover {
+    position: fixed;
+    top: 30px;
+    right: 90px;
+    width: 320px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(40px);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(0,0,0,0.1);
+    padding: 14px;
+    z-index: 999;
+    font-size: 13px;
+  }
+
+  .popover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 10px;
+  }
+
+  .popover-title {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  .popover-sync-status {
+    color: var(--accent);
+    font-size: 11.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .popover-sync-status::before {
+    content: '●';
+    font-size: 8px;
+  }
+
+  .popover-stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    color: var(--text-soft);
+    font-size: 12.5px;
+  }
+
+  .popover-stat-row strong { color: var(--text); font-weight: 500; }
+
+  .popover-actions {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .popover-action {
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text);
+  }
+
+  .popover-action:hover { background: rgba(74, 122, 62, 0.1); }
+
+  .popover-action-icon { font-size: 13px; width: 16px; }
+
+  .popover-shortcut {
+    margin-left: auto;
+    color: var(--text-faint);
+    font-size: 11px;
+    font-family: 'SF Mono', Menlo, monospace;
+  }
+
+  /* 主窗口 */
+  .window {
+    max-width: 1200px;
+    margin: 30px auto 0;
+    background: var(--window);
+    backdrop-filter: blur(30px);
+    border-radius: 12px;
+    box-shadow:
+      0 30px 60px rgba(0,0,0,0.3),
+      0 0 0 0.5px rgba(0,0,0,0.1);
+    overflow: hidden;
+    height: 760px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 标题栏 */
+  .titlebar {
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .traffic-lights {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .traffic {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .traffic.red { background: var(--traffic-red); }
+  .traffic.yellow { background: var(--traffic-yellow); }
+  .traffic.green { background: var(--traffic-green); }
+
+  .titlebar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.2px;
+  }
+
+  .titlebar-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 14px;
+    color: var(--text-soft);
+  }
+
+  .titlebar-action {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+
+  .titlebar-action:hover { background: rgba(0,0,0,0.05); }
+
+  /* 工具栏 */
+  .toolbar {
+    height: 48px;
+    background: rgba(255, 255, 255, 0.25);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .toolbar-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .toolbar-btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text-soft);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+  }
+
+  .toolbar-btn:hover { background: rgba(0,0,0,0.06); }
+
+  .toolbar-separator {
+    width: 1px;
+    height: 18px;
+    background: var(--line);
+    margin: 0 4px;
+  }
+
+  .toolbar-search {
+    margin-left: auto;
+    width: 220px;
+    height: 26px;
+    background: rgba(0,0,0,0.06);
+    border: none;
+    border-radius: 6px;
+    padding: 0 10px 0 28px;
+    font-size: 12.5px;
+    font-family: inherit;
+    color: var(--text);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23999'%3E%3Cpath d='M11 6.5a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0Zm-.82 4.74a6 6 0 1 1 1.06-1.06l3.04 3.04a.75.75 0 0 1-1.06 1.06l-3.04-3.04Z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 8px center;
+    background-size: 14px;
+  }
+
+  .toolbar-search:focus { outline: none; background-color: rgba(0,0,0,0.08); }
+
+  .sync-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 100px;
+    font-size: 11.5px;
+    font-weight: 500;
+  }
+
+  .sync-status-pill::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  /* 主体三栏 */
+  .body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 220px 1fr 340px;
+    overflow: hidden;
+  }
+
+  /* 左侧 */
+  .sidebar {
+    background: var(--sidebar);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    padding: 16px 0;
+  }
+
+  .sidebar-section { margin-bottom: 18px; }
+
+  .sidebar-title {
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    padding: 0 16px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .sb-item {
+    padding: 5px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+    transition: background 0.1s;
+    margin: 0 6px;
+    border-radius: 5px;
+  }
+
+  .sb-item:hover { background: rgba(0,0,0,0.05); }
+
+  .sb-item.active {
+    background: rgba(74, 122, 62, 0.85);
+    color: white;
+  }
+
+  .sb-icon { font-size: 12px; width: 16px; opacity: 0.8; }
+  .sb-item.active .sb-icon { opacity: 1; }
+
+  .sb-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  .sb-item.active .sb-count { color: rgba(255,255,255,0.85); }
+
+  /* 中间内容 */
+  .main {
+    overflow-y: auto;
+    padding: 18px 24px;
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+
+  .main-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+  }
+
+  .main-meta {
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+
+  .book-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .book-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .book-row:hover { background: rgba(0,0,0,0.04); }
+
+  .book-row.selected { background: rgba(74, 122, 62, 0.12); }
+
+  .book-check {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid rgba(0,0,0,0.2);
+    border-radius: 4px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+  }
+
+  .book-row.selected .book-check {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .book-row.selected .book-check::after {
+    content: '✓';
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .book-cover {
+    width: 32px;
+    height: 44px;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: white;
+    padding: 3px;
+    text-align: center;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #d4a574, #a07a4e);
+    font-family: 'Times New Roman', serif;
+  }
+
+  .book-cover.c2 { background: linear-gradient(135deg, #5a7a8a, #3a5a6a); }
+  .book-cover.c3 { background: linear-gradient(135deg, #8a4a4a, #6a2a2a); }
+  .book-cover.c4 { background: linear-gradient(135deg, #4a6a4a, #2a4a2a); }
+  .book-cover.c5 { background: linear-gradient(135deg, #6a4a7a, #4a2a5a); }
+  .book-cover.c6 { background: linear-gradient(135deg, #7a6a4a, #5a4a2a); }
+
+  .book-info { flex: 1; min-width: 0; }
+
+  .book-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .book-author {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 1px;
+  }
+
+  .book-stats {
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .book-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+
+  .badge-finished { background: var(--accent-soft); color: var(--accent); }
+  .badge-reading { background: #f0e8d8; color: #8a6a2e; }
+
+  /* 右侧 */
+  .preview {
+    background: rgba(255, 255, 255, 0.55);
+    border-left: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .preview-tabs {
+    display: flex;
+    padding: 12px 16px 0;
+    gap: 2px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .preview-tab {
+    padding: 7px 12px;
+    font-size: 12px;
+    color: var(--text-soft);
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    border: 1px solid transparent;
+    border-bottom: none;
+    margin-bottom: -1px;
+  }
+
+  .preview-tab.active {
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--text);
+    border-color: var(--line);
+    font-weight: 500;
+  }
+
+  .preview-section {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .preview-section-title {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 10px;
+  }
+
+  .tpl-row {
+    display: flex;
+    gap: 5px;
+  }
+
+  .tpl-card {
+    flex: 1;
+    padding: 8px 6px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.5);
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 11.5px;
+    transition: all 0.15s;
+  }
+
+  .tpl-card:hover { border-color: rgba(0,0,0,0.2); }
+
+  .tpl-card.selected {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .opt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 12.5px;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .toggle {
+    position: relative;
+    width: 30px;
+    height: 17px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 100px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 13px;
+    height: 13px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { transform: translateX(13px); }
+
+  .auto-sync-section {
+    padding: 14px 18px;
+    background: rgba(74, 122, 62, 0.06);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .auto-sync-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .auto-sync-desc {
+    font-size: 11.5px;
+    color: var(--text-soft);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  .auto-sync-folder {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    color: var(--text-soft);
+    background: rgba(255,255,255,0.6);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .preview-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 18px;
+    background: rgba(255, 255, 255, 0.4);
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: var(--text-soft);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .preview-body .md-h1 { color: var(--text); font-weight: 700; font-size: 12.5px; }
+  .preview-body .md-h2 { color: var(--text); font-weight: 600; }
+  .preview-body .md-meta { color: var(--text-faint); }
+  .preview-body .md-quote { color: #8a6a2e; }
+
+  .footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .footer-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+
+  .export-btn {
+    width: 100%;
+    padding: 8px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .export-btn:hover { background: #3d6533; }
+
+  .export-btn:disabled {
+    background: rgba(0,0,0,0.1);
+    color: var(--text-faint);
+    cursor: not-allowed;
+  }
+
+  /* 说明气泡 */
+  .annotations {
+    max-width: 1200px;
+    margin: 24px auto 0;
+    background: white;
+    border-radius: 10px;
+    padding: 20px 26px;
+    font-size: 13px;
+    color: var(--text-soft);
+    line-height: 1.7;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+
+  .annotations h4 {
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .annotations strong { color: var(--text); }
+
+  .annotations ul {
+    margin-left: 20px;
+    margin-top: 6px;
+  }
+
+  .annotations li { margin-bottom: 4px; }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); }
+</style>
+</head>
+<body>
+
+<!-- mac 顶部状态栏 -->
+<div class="macos-menubar">
+  <div class="menubar-left">
+    <span class="menubar-apple">●</span>
+    <strong>读墨</strong>
+    <span style="font-weight: 400; opacity: 0.75;">文件</span>
+    <span style="font-weight: 400; opacity: 0.75;">编辑</span>
+    <span style="font-weight: 400; opacity: 0.75;">视图</span>
+    <span style="font-weight: 400; opacity: 0.75;">同步</span>
+    <span style="font-weight: 400; opacity: 0.75;">帮助</span>
+  </div>
+  <div class="menubar-right">
+    <span>📶</span>
+    <span>🔋 87%</span>
+    <div class="menubar-app-icon active" onclick="togglePopover()">
+      <div class="menubar-app-dot"></div>
+      <span style="font-size:11px;font-weight:500;">墨</span>
+    </div>
+    <span>周三 11:42</span>
+  </div>
+</div>
+
+<!-- 菜单栏点开后的小气泡 -->
+<div class="menubar-popover" id="popover">
+  <div class="popover-header">
+    <div class="popover-title">读墨 · 宁窕</div>
+    <div class="popover-sync-status">已同步</div>
+  </div>
+  <div class="popover-stat-row"><span>书架</span><strong>312 本</strong></div>
+  <div class="popover-stat-row"><span>本月新增笔记</span><strong>47 条</strong></div>
+  <div class="popover-stat-row"><span>未同步</span><strong style="color: var(--accent);">3 本有更新</strong></div>
+  <div class="popover-stat-row"><span>上次同步</span><span style="color: var(--text-faint);">2 分钟前</span></div>
+
+  <div class="popover-actions">
+    <div class="popover-action">
+      <span class="popover-action-icon">↻</span>
+      <span>立即同步</span>
+      <span class="popover-shortcut">⌘R</span>
+    </div>
+    <div class="popover-action">
+      <span class="popover-action-icon">⊞</span>
+      <span>打开主窗口</span>
+      <span class="popover-shortcut">⌘O</span>
+    </div>
+    <div class="popover-action">
+      <span class="popover-action-icon">⚙</span>
+      <span>偏好设置...</span>
+      <span class="popover-shortcut">⌘,</span>
+    </div>
+    <div class="popover-action">
+      <span class="popover-action-icon">⏻</span>
+      <span>退出读墨</span>
+      <span class="popover-shortcut">⌘Q</span>
+    </div>
+  </div>
+</div>
+
+<!-- 主窗口 -->
+<div class="window">
+  <!-- 标题栏 -->
+  <div class="titlebar">
+    <div class="traffic-lights">
+      <div class="traffic red"></div>
+      <div class="traffic yellow"></div>
+      <div class="traffic green"></div>
+    </div>
+    <div class="titlebar-title">读墨</div>
+    <div class="titlebar-actions">
+      <span class="titlebar-action">⊟</span>
+    </div>
+  </div>
+
+  <!-- 工具栏 -->
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <button class="toolbar-btn">↻ 同步</button>
+      <button class="toolbar-btn">📤 导出</button>
+    </div>
+    <div class="toolbar-separator"></div>
+    <div class="toolbar-group">
+      <button class="toolbar-btn">📁 打开导出文件夹</button>
+    </div>
+    <input class="toolbar-search" placeholder="搜索书名、作者、笔记…">
+    <div class="sync-status-pill">宁窕 · 已连接</div>
+  </div>
+
+  <!-- 三栏主体 -->
+  <div class="body">
+    <!-- 左侧 -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">书库</div>
+        <div class="sb-item active">
+          <span class="sb-icon">📚</span><span>全部</span><span class="sb-count">312</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-icon">📖</span><span>在读</span><span class="sb-count">8</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-icon">✓</span><span>已读完</span><span class="sb-count">214</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-icon">★</span><span>收藏</span><span class="sb-count">47</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-icon">✎</span><span>有笔记</span><span class="sb-count">156</span>
+        </div>
+        <div class="sb-item">
+          <span class="sb-icon">●</span><span>有新笔记</span><span class="sb-count" style="color:var(--accent);">3</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">分类</div>
+        <div class="sb-item"><span class="sb-icon">·</span><span>文学</span><span class="sb-count">68</span></div>
+        <div class="sb-item"><span class="sb-icon">·</span><span>社科</span><span class="sb-count">42</span></div>
+        <div class="sb-item"><span class="sb-icon">·</span><span>历史</span><span class="sb-count">35</span></div>
+        <div class="sb-item"><span class="sb-icon">·</span><span>科技</span><span class="sb-count">28</span></div>
+        <div class="sb-item"><span class="sb-icon">·</span><span>哲学</span><span class="sb-count">19</span></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">智能筛选</div>
+        <div class="sb-item"><span class="sb-icon">⊕</span><span style="color:var(--text-faint);">添加筛选...</span></div>
+      </div>
+    </aside>
+
+    <!-- 中间 -->
+    <main class="main">
+      <div class="main-header">
+        <div class="main-title">全部书籍</div>
+        <div class="main-meta">最近同步：2 分钟前 · ⌘R 刷新</div>
+      </div>
+      <div class="book-list" id="bookList"></div>
+    </main>
+
+    <!-- 右侧 -->
+    <aside class="preview">
+      <div class="preview-tabs">
+        <div class="preview-tab active">导出</div>
+        <div class="preview-tab">自动同步</div>
+        <div class="preview-tab">历史</div>
+      </div>
+
+      <div class="auto-sync-section">
+        <div class="auto-sync-title">
+          <span>自动同步到 Obsidian</span>
+          <div class="toggle on"></div>
+        </div>
+        <div class="auto-sync-desc">每天凌晨 3:00 自动同步新笔记</div>
+        <div class="auto-sync-folder">
+          <span style="font-size:11px;">📁</span>
+          <span>~/Documents/Obsidian/Reading</span>
+          <span style="margin-left:auto;color:var(--text-faint);">更改</span>
+        </div>
+      </div>
+
+      <div class="preview-section">
+        <div class="preview-section-title">模板</div>
+        <div class="tpl-row">
+          <div class="tpl-card selected">Obsidian</div>
+          <div class="tpl-card">Notion</div>
+          <div class="tpl-card">通用</div>
+        </div>
+      </div>
+
+      <div class="preview-section">
+        <div class="preview-section-title">选项</div>
+        <div class="opt-row"><span>包含个人想法</span><div class="toggle on"></div></div>
+        <div class="opt-row"><span>包含封面图</span><div class="toggle on"></div></div>
+        <div class="opt-row"><span>按章节分组</span><div class="toggle"></div></div>
+      </div>
+
+      <div class="preview-body" id="previewBody">
+<span class="md-meta">---
+title: "置身事内：中国政府与经济发展"
+author: "兰小欢"
+status: finished
+notes_count: 47
+synced: 2026-05-27
+tags: [读书笔记, 社科]
+---</span>
+
+<span class="md-h1"># 置身事内</span>
+
+<span class="md-h2">## 元信息</span>
+- 作者：[[兰小欢]]
+- 分类：#社科
+- 状态：已读完
+
+<span class="md-h2">## 笔记</span>
+
+<span class="md-quote">> 中国政府不仅是规则的制定者，也是市场参与者；不仅是裁判，也是球员。</span>
+
+这是理解中国经济最关键的一句话。
+
+<span class="md-meta">*2024-03-15*</span>
+      </div>
+
+      <div class="footer">
+        <div class="footer-stats">
+          <span><span id="footerBooks">0</span> 本书</span>
+          <span><span id="footerNotes">0</span> 条笔记</span>
+          <span>约 <span id="footerSize">0</span> KB</span>
+        </div>
+        <button class="export-btn" id="exportBtn" disabled>选择书籍后导出</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- 说明 -->
+<div class="annotations">
+  <h4>macOS 桌面版的关键差异</h4>
+  <p style="margin-bottom: 10px;">桌面版和 Web 版长得很像，但<strong>核心价值不在主窗口里</strong>。Mac 用户大部分时候不会打开这个 App，它默默地在背景工作。看看下面几处细节：</p>
+  <ul>
+    <li><strong>右上角菜单栏小图标（点一下「墨」试试）</strong>：常驻状态栏，不开主窗口也能看到同步状态。"3 本有更新"是核心信号——告诉你该不该立即同步。</li>
+    <li><strong>"自动同步到 Obsidian"开关</strong>（右侧最顶部）：这是桌面版的灵魂功能。设置好以后，你以后完全不需要打开读墨——它每天凌晨自动把新笔记写到你的 Obsidian 文件夹里。</li>
+    <li><strong>"有新笔记"分类</strong>（左侧绿色数字 3）：自动检测微信读书里上次同步后新增的笔记，让你不用挨个翻书。</li>
+    <li><strong>原生窗口控件</strong>：红黄绿交通灯、毛玻璃背景、SF 字体——这些细节决定了 Mac 用户觉得它"是不是地道的 Mac App"。</li>
+  </ul>
+</div>
+
+<script>
+  const books = [
+    { id: 1, title: '置身事内：中国政府与经济发展', author: '兰小欢', cover: '置身事内', cls: '', notes: 47, status: 'finished', cat: '社科', hasNew: false },
+    { id: 2, title: '把自己作为方法', author: '项飙 / 吴琦', cover: '把自己作为方法', cls: 'c2', notes: 89, status: 'finished', cat: '社科', hasNew: true },
+    { id: 3, title: '人类简史', author: '尤瓦尔·赫拉利', cover: '人类简史', cls: 'c3', notes: 124, status: 'finished', cat: '历史', hasNew: false },
+    { id: 4, title: '活着', author: '余华', cover: '活着', cls: 'c4', notes: 32, status: 'finished', cat: '文学', hasNew: false },
+    { id: 5, title: '思考，快与慢', author: '丹尼尔·卡尼曼', cover: '思考快与慢', cls: 'c5', notes: 56, status: 'reading', cat: '社科', hasNew: true },
+    { id: 6, title: '万物的尺度', author: '詹姆斯·克利克', cover: '万物的尺度', cls: 'c6', notes: 18, status: 'reading', cat: '科技', hasNew: false },
+    { id: 7, title: '小王子', author: '圣埃克苏佩里', cover: '小王子', cls: 'c2', notes: 21, status: 'finished', cat: '文学', hasNew: false },
+    { id: 8, title: '红楼梦', author: '曹雪芹', cover: '红楼梦', cls: 'c4', notes: 156, status: 'finished', cat: '文学', hasNew: true },
+  ];
+
+  const selected = new Set();
+
+  function render() {
+    document.getElementById('bookList').innerHTML = books.map(b => `
+      <div class="book-row ${selected.has(b.id) ? 'selected' : ''}" onclick="toggle(${b.id})">
+        <div class="book-check"></div>
+        <div class="book-cover ${b.cls}">${b.cover}</div>
+        <div class="book-info">
+          <div class="book-title">
+            ${b.title}
+            ${b.hasNew ? '<span style="color:var(--accent);font-size:14px;margin-left:4px;">●</span>' : ''}
+          </div>
+          <div class="book-author">${b.author} · ${b.cat}</div>
+        </div>
+        <div class="book-stats">
+          <span class="book-badge ${b.status === 'finished' ? 'badge-finished' : 'badge-reading'}">${b.status === 'finished' ? '读完' : '在读'}</span>
+          <span>${b.notes} 条</span>
+        </div>
+      </div>
+    `).join('');
+
+    const sel = books.filter(b => selected.has(b.id));
+    const noteCount = sel.reduce((s, b) => s + b.notes, 0);
+    document.getElementById('footerBooks').textContent = sel.length;
+    document.getElementById('footerNotes').textContent = noteCount;
+    document.getElementById('footerSize').textContent = Math.max(1, Math.round(noteCount * 0.4));
+    const btn = document.getElementById('exportBtn');
+    btn.disabled = sel.length === 0;
+    btn.textContent = sel.length === 0 ? '选择书籍后导出' : `导出 ${sel.length} 本（${noteCount} 条）`;
+  }
+
+  function toggle(id) {
+    if (selected.has(id)) selected.delete(id);
+    else selected.add(id);
+    render();
+  }
+
+  let popoverOpen = true;
+  function togglePopover() {
+    popoverOpen = !popoverOpen;
+    document.getElementById('popover').style.display = popoverOpen ? 'block' : 'none';
+  }
+
+  render();
+</script>
+
+</body>
+</html>
