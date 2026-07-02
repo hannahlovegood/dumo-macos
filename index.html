@@ -92,6 +92,7 @@
 
   /* 菜单栏下拉气泡 */
   .menubar-popover {
+    display: none;
     position: fixed;
     top: 30px;
     right: 90px;
@@ -212,11 +213,28 @@
     height: 12px;
     border-radius: 50%;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .traffic.red { background: var(--traffic-red); }
   .traffic.yellow { background: var(--traffic-yellow); }
   .traffic.green { background: var(--traffic-green); }
+
+  /* 悬停时显示 × − + 符号（还原 macOS 行为） */
+  .traffic::after {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+    color: transparent;
+  }
+  .traffic.red::after { content: '×'; }
+  .traffic.yellow::after { content: '−'; }
+  .traffic.green::after { content: '+'; }
+  .traffic-lights:hover .traffic.red::after { color: rgba(90, 0, 0, 0.6); }
+  .traffic-lights:hover .traffic.yellow::after { color: rgba(100, 65, 0, 0.65); }
+  .traffic-lights:hover .traffic.green::after { color: rgba(0, 70, 0, 0.6); }
 
   .titlebar-title {
     position: absolute;
@@ -277,6 +295,8 @@
     border: none;
     background: transparent;
     font-family: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .toolbar-btn:hover { background: rgba(0,0,0,0.06); }
@@ -547,6 +567,57 @@
     font-weight: 500;
   }
 
+  /* 标签页内容 */
+  .tab-pane {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .tab-pane.active { display: flex; }
+
+  /* 导出页保持原布局：上部固定，仅 markdown 预览区内部滚动 */
+  #pane-export { overflow: hidden; }
+  #pane-export .preview-body { min-height: 0; }
+
+  .opt-value {
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+
+  /* 历史标签页 */
+  .history-item {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+  }
+  .history-time {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .history-badge {
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 100px;
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--text-soft);
+  }
+  .history-badge.auto {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .history-desc {
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+
   .preview-section {
     padding: 14px 18px;
     border-bottom: 1px solid var(--line);
@@ -741,6 +812,79 @@
 
   .annotations li { margin-bottom: 4px; }
 
+  /* 收起侧栏（标题栏 ⊟ 按钮） */
+  .body.no-sidebar { grid-template-columns: 1fr 340px; }
+  .body.no-sidebar .sidebar { display: none; }
+
+  /* 空筛选结果 */
+  .empty-state {
+    padding: 48px 0;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 12.5px;
+  }
+
+  /* macOS 风格 HUD 提示（原型中代替真实系统行为） */
+  .hud {
+    position: fixed;
+    bottom: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(40, 40, 38, 0.88);
+    backdrop-filter: blur(12px);
+    color: rgba(255, 255, 255, 0.95);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    max-width: calc(100vw - 40px);
+    text-align: center;
+  }
+  .hud.show { opacity: 1; }
+
+  /* 窄屏（移动端预览）：三栏改纵向堆叠 */
+  @media (max-width: 900px) {
+    body { padding: 34px 10px 20px; }
+    .menubar-menu { display: none; }
+    .menubar-right { gap: 10px; }
+    .window { height: auto; margin-top: 14px; }
+    .body { display: flex; flex-direction: column; }
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 10px;
+      overflow-y: visible;
+    }
+    .sidebar-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .sidebar-section:last-child { margin-bottom: 0; }
+    .sidebar-title { width: 100%; margin-bottom: 6px; }
+    .sb-item {
+      margin: 0;
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .sb-count { margin-left: 5px; }
+    .main { max-height: 430px; padding: 16px; }
+    .preview { border-left: none; border-top: 1px solid var(--line); }
+    .preview-body { max-height: 240px; }
+    .toolbar { overflow-x: auto; }
+    .toolbar-search { width: 140px; min-width: 120px; margin-left: auto; flex-shrink: 0; }
+    .sync-status-pill { flex-shrink: 0; white-space: nowrap; }
+    .menubar-popover { right: 10px; width: min(320px, calc(100vw - 20px)); }
+    .body.no-sidebar { display: flex; }
+  }
+
   /* 滚动条 */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -755,16 +899,16 @@
   <div class="menubar-left">
     <span class="menubar-apple">●</span>
     <strong>读墨</strong>
-    <span style="font-weight: 400; opacity: 0.75;">文件</span>
-    <span style="font-weight: 400; opacity: 0.75;">编辑</span>
-    <span style="font-weight: 400; opacity: 0.75;">视图</span>
-    <span style="font-weight: 400; opacity: 0.75;">同步</span>
-    <span style="font-weight: 400; opacity: 0.75;">帮助</span>
+    <span class="menubar-menu" style="font-weight: 400; opacity: 0.75;">文件</span>
+    <span class="menubar-menu" style="font-weight: 400; opacity: 0.75;">编辑</span>
+    <span class="menubar-menu" style="font-weight: 400; opacity: 0.75;">视图</span>
+    <span class="menubar-menu" style="font-weight: 400; opacity: 0.75;">同步</span>
+    <span class="menubar-menu" style="font-weight: 400; opacity: 0.75;">帮助</span>
   </div>
   <div class="menubar-right">
     <span>📶</span>
     <span>🔋 87%</span>
-    <div class="menubar-app-icon active" onclick="togglePopover()">
+    <div class="menubar-app-icon" id="menubarIcon" onclick="toggleMenuPopover(event)">
       <div class="menubar-app-dot"></div>
       <span style="font-size:11px;font-weight:500;">墨</span>
     </div>
@@ -776,30 +920,30 @@
 <div class="menubar-popover" id="popover">
   <div class="popover-header">
     <div class="popover-title">读墨 · 宁窕</div>
-    <div class="popover-sync-status">已同步</div>
+    <div class="popover-sync-status" id="popSyncStatus">已同步</div>
   </div>
   <div class="popover-stat-row"><span>书架</span><strong>312 本</strong></div>
   <div class="popover-stat-row"><span>本月新增笔记</span><strong>47 条</strong></div>
   <div class="popover-stat-row"><span>未同步</span><strong style="color: var(--accent);">3 本有更新</strong></div>
-  <div class="popover-stat-row"><span>上次同步</span><span style="color: var(--text-faint);">2 分钟前</span></div>
+  <div class="popover-stat-row"><span>上次同步</span><span style="color: var(--text-faint);" id="popLastSync">2 分钟前</span></div>
 
   <div class="popover-actions">
-    <div class="popover-action">
+    <div class="popover-action" onclick="closePopover(); doSync();">
       <span class="popover-action-icon">↻</span>
       <span>立即同步</span>
       <span class="popover-shortcut">⌘R</span>
     </div>
-    <div class="popover-action">
+    <div class="popover-action" onclick="closePopover(); document.querySelector('.window').scrollIntoView({behavior:'smooth'});">
       <span class="popover-action-icon">⊞</span>
       <span>打开主窗口</span>
       <span class="popover-shortcut">⌘O</span>
     </div>
-    <div class="popover-action">
+    <div class="popover-action" onclick="closePopover(); showHud('偏好设置未包含在此原型中');">
       <span class="popover-action-icon">⚙</span>
       <span>偏好设置...</span>
       <span class="popover-shortcut">⌘,</span>
     </div>
-    <div class="popover-action">
+    <div class="popover-action" onclick="closePopover(); showHud('原型演示：读墨会继续留在菜单栏');">
       <span class="popover-action-icon">⏻</span>
       <span>退出读墨</span>
       <span class="popover-shortcut">⌘Q</span>
@@ -812,28 +956,28 @@
   <!-- 标题栏 -->
   <div class="titlebar">
     <div class="traffic-lights">
-      <div class="traffic red"></div>
-      <div class="traffic yellow"></div>
-      <div class="traffic green"></div>
+      <div class="traffic red" onclick="showHud('原型演示：关闭窗口后读墨仍在菜单栏运行')"></div>
+      <div class="traffic yellow" onclick="showHud('原型演示：最小化到 Dock')"></div>
+      <div class="traffic green" onclick="showHud('原型演示：全屏未包含在此原型中')"></div>
     </div>
     <div class="titlebar-title">读墨</div>
     <div class="titlebar-actions">
-      <span class="titlebar-action">⊟</span>
+      <span class="titlebar-action" title="收起/展开侧栏" onclick="document.querySelector('.body').classList.toggle('no-sidebar')">⊟</span>
     </div>
   </div>
 
   <!-- 工具栏 -->
   <div class="toolbar">
     <div class="toolbar-group">
-      <button class="toolbar-btn">↻ 同步</button>
-      <button class="toolbar-btn">📤 导出</button>
+      <button class="toolbar-btn" onclick="doSync()">↻ 同步</button>
+      <button class="toolbar-btn" onclick="doExport()">📤 导出</button>
     </div>
     <div class="toolbar-separator"></div>
     <div class="toolbar-group">
-      <button class="toolbar-btn">📁 打开导出文件夹</button>
+      <button class="toolbar-btn" onclick="showHud('已在 Finder 中打开 ~/Documents/Obsidian/Reading（原型演示）')">📁 打开导出文件夹</button>
     </div>
-    <input class="toolbar-search" placeholder="搜索书名、作者、笔记…">
-    <div class="sync-status-pill">宁窕 · 已连接</div>
+    <input class="toolbar-search" id="searchInput" placeholder="搜索书名、作者、笔记…">
+    <div class="sync-status-pill" id="syncPill">宁窕 · 已连接</div>
   </div>
 
   <!-- 三栏主体 -->
@@ -842,33 +986,33 @@
     <aside class="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-title">书库</div>
-        <div class="sb-item active">
+        <div class="sb-item active" data-filter="all" data-label="全部书籍">
           <span class="sb-icon">📚</span><span>全部</span><span class="sb-count">312</span>
         </div>
-        <div class="sb-item">
+        <div class="sb-item" data-filter="reading" data-label="在读">
           <span class="sb-icon">📖</span><span>在读</span><span class="sb-count">8</span>
         </div>
-        <div class="sb-item">
+        <div class="sb-item" data-filter="finished" data-label="已读完">
           <span class="sb-icon">✓</span><span>已读完</span><span class="sb-count">214</span>
         </div>
-        <div class="sb-item">
+        <div class="sb-item" data-filter="fav" data-label="收藏">
           <span class="sb-icon">★</span><span>收藏</span><span class="sb-count">47</span>
         </div>
-        <div class="sb-item">
+        <div class="sb-item" data-filter="noted" data-label="有笔记">
           <span class="sb-icon">✎</span><span>有笔记</span><span class="sb-count">156</span>
         </div>
-        <div class="sb-item">
+        <div class="sb-item" data-filter="new" data-label="有新笔记">
           <span class="sb-icon">●</span><span>有新笔记</span><span class="sb-count" style="color:var(--accent);">3</span>
         </div>
       </div>
 
       <div class="sidebar-section">
         <div class="sidebar-title">分类</div>
-        <div class="sb-item"><span class="sb-icon">·</span><span>文学</span><span class="sb-count">68</span></div>
-        <div class="sb-item"><span class="sb-icon">·</span><span>社科</span><span class="sb-count">42</span></div>
-        <div class="sb-item"><span class="sb-icon">·</span><span>历史</span><span class="sb-count">35</span></div>
-        <div class="sb-item"><span class="sb-icon">·</span><span>科技</span><span class="sb-count">28</span></div>
-        <div class="sb-item"><span class="sb-icon">·</span><span>哲学</span><span class="sb-count">19</span></div>
+        <div class="sb-item" data-filter="cat" data-cat="文学" data-label="文学"><span class="sb-icon">·</span><span>文学</span><span class="sb-count">68</span></div>
+        <div class="sb-item" data-filter="cat" data-cat="社科" data-label="社科"><span class="sb-icon">·</span><span>社科</span><span class="sb-count">42</span></div>
+        <div class="sb-item" data-filter="cat" data-cat="历史" data-label="历史"><span class="sb-icon">·</span><span>历史</span><span class="sb-count">35</span></div>
+        <div class="sb-item" data-filter="cat" data-cat="科技" data-label="科技"><span class="sb-icon">·</span><span>科技</span><span class="sb-count">28</span></div>
+        <div class="sb-item" data-filter="cat" data-cat="哲学" data-label="哲学"><span class="sb-icon">·</span><span>哲学</span><span class="sb-count">19</span></div>
       </div>
 
       <div class="sidebar-section">
@@ -880,8 +1024,8 @@
     <!-- 中间 -->
     <main class="main">
       <div class="main-header">
-        <div class="main-title">全部书籍</div>
-        <div class="main-meta">最近同步：2 分钟前 · ⌘R 刷新</div>
+        <div class="main-title" id="mainTitle">全部书籍</div>
+        <div class="main-meta" id="mainMeta">最近同步：2 分钟前 · ⌘R 刷新</div>
       </div>
       <div class="book-list" id="bookList"></div>
     </main>
@@ -889,10 +1033,13 @@
     <!-- 右侧 -->
     <aside class="preview">
       <div class="preview-tabs">
-        <div class="preview-tab active">导出</div>
-        <div class="preview-tab">自动同步</div>
-        <div class="preview-tab">历史</div>
+        <div class="preview-tab active" data-tab="export">导出</div>
+        <div class="preview-tab" data-tab="autosync">自动同步</div>
+        <div class="preview-tab" data-tab="history">历史</div>
       </div>
+
+      <!-- 标签页：导出 -->
+      <div class="tab-pane active" id="pane-export">
 
       <div class="auto-sync-section">
         <div class="auto-sync-title">
@@ -900,7 +1047,7 @@
           <div class="toggle on"></div>
         </div>
         <div class="auto-sync-desc">每天凌晨 3:00 自动同步新笔记</div>
-        <div class="auto-sync-folder">
+        <div class="auto-sync-folder" onclick="showHud('文件夹选择未包含在此原型中')">
           <span style="font-size:11px;">📁</span>
           <span>~/Documents/Obsidian/Reading</span>
           <span style="margin-left:auto;color:var(--text-faint);">更改</span>
@@ -949,6 +1096,51 @@ tags: [读书笔记, 社科]
 <span class="md-meta">*2024-03-15*</span>
       </div>
 
+      </div><!-- /pane-export -->
+
+      <!-- 标签页：自动同步 -->
+      <div class="tab-pane" id="pane-autosync">
+        <div class="preview-section">
+          <div class="preview-section-title">计划</div>
+          <div class="opt-row"><span>同步频率</span><span class="opt-value">每天 03:00</span></div>
+          <div class="opt-row"><span>仅同步有新笔记的书</span><div class="toggle on"></div></div>
+          <div class="opt-row"><span>同步完成后通知</span><div class="toggle on"></div></div>
+        </div>
+        <div class="preview-section">
+          <div class="preview-section-title">冲突处理</div>
+          <div class="opt-row"><span>Obsidian 里已有同名文件</span><span class="opt-value">追加新笔记</span></div>
+          <div class="opt-row"><span>保留本地修改</span><div class="toggle on"></div></div>
+        </div>
+        <div class="preview-section" style="border-bottom:none;">
+          <div class="preview-section-title">说明</div>
+          <div class="auto-sync-desc" style="margin-bottom:0;">开启后读墨常驻菜单栏，每天自动把微信读书的新笔记写入你的 Obsidian 文件夹，无需打开主窗口。</div>
+        </div>
+      </div>
+
+      <!-- 标签页：历史 -->
+      <div class="tab-pane" id="pane-history">
+        <div class="history-item">
+          <div class="history-row"><span class="history-time">今天 09:12</span><span class="history-badge">手动</span></div>
+          <div class="history-desc">3 本书 · 新增 12 条笔记</div>
+        </div>
+        <div class="history-item">
+          <div class="history-row"><span class="history-time">今天 03:00</span><span class="history-badge auto">自动</span></div>
+          <div class="history-desc">2 本书 · 新增 5 条笔记</div>
+        </div>
+        <div class="history-item">
+          <div class="history-row"><span class="history-time">昨天 03:00</span><span class="history-badge auto">自动</span></div>
+          <div class="history-desc">无新笔记</div>
+        </div>
+        <div class="history-item">
+          <div class="history-row"><span class="history-time">5月25日 03:00</span><span class="history-badge auto">自动</span></div>
+          <div class="history-desc">1 本书 · 新增 8 条笔记</div>
+        </div>
+        <div class="history-item">
+          <div class="history-row"><span class="history-time">5月24日 21:47</span><span class="history-badge">手动</span></div>
+          <div class="history-desc">导出 4 本到 Obsidian · 156 条</div>
+        </div>
+      </div>
+
       <div class="footer">
         <div class="footer-stats">
           <span><span id="footerBooks">0</span> 本书</span>
@@ -973,22 +1165,49 @@ tags: [读书笔记, 社科]
   </ul>
 </div>
 
+<div class="hud" id="hud"></div>
+
 <script>
   const books = [
-    { id: 1, title: '置身事内：中国政府与经济发展', author: '兰小欢', cover: '置身事内', cls: '', notes: 47, status: 'finished', cat: '社科', hasNew: false },
-    { id: 2, title: '把自己作为方法', author: '项飙 / 吴琦', cover: '把自己作为方法', cls: 'c2', notes: 89, status: 'finished', cat: '社科', hasNew: true },
-    { id: 3, title: '人类简史', author: '尤瓦尔·赫拉利', cover: '人类简史', cls: 'c3', notes: 124, status: 'finished', cat: '历史', hasNew: false },
-    { id: 4, title: '活着', author: '余华', cover: '活着', cls: 'c4', notes: 32, status: 'finished', cat: '文学', hasNew: false },
-    { id: 5, title: '思考，快与慢', author: '丹尼尔·卡尼曼', cover: '思考快与慢', cls: 'c5', notes: 56, status: 'reading', cat: '社科', hasNew: true },
-    { id: 6, title: '万物的尺度', author: '詹姆斯·克利克', cover: '万物的尺度', cls: 'c6', notes: 18, status: 'reading', cat: '科技', hasNew: false },
-    { id: 7, title: '小王子', author: '圣埃克苏佩里', cover: '小王子', cls: 'c2', notes: 21, status: 'finished', cat: '文学', hasNew: false },
-    { id: 8, title: '红楼梦', author: '曹雪芹', cover: '红楼梦', cls: 'c4', notes: 156, status: 'finished', cat: '文学', hasNew: true },
+    { id: 1, title: '置身事内：中国政府与经济发展', author: '兰小欢', cover: '置身事内', cls: '', notes: 47, status: 'finished', cat: '社科', hasNew: false, fav: false },
+    { id: 2, title: '把自己作为方法', author: '项飙 / 吴琦', cover: '把自己作为方法', cls: 'c2', notes: 89, status: 'finished', cat: '社科', hasNew: true, fav: true },
+    { id: 3, title: '人类简史', author: '尤瓦尔·赫拉利', cover: '人类简史', cls: 'c3', notes: 124, status: 'finished', cat: '历史', hasNew: false, fav: true },
+    { id: 4, title: '活着', author: '余华', cover: '活着', cls: 'c4', notes: 32, status: 'finished', cat: '文学', hasNew: false, fav: false },
+    { id: 5, title: '思考，快与慢', author: '丹尼尔·卡尼曼', cover: '思考快与慢', cls: 'c5', notes: 56, status: 'reading', cat: '社科', hasNew: true, fav: false },
+    { id: 6, title: '万物的尺度', author: '詹姆斯·克利克', cover: '万物的尺度', cls: 'c6', notes: 18, status: 'reading', cat: '科技', hasNew: false, fav: false },
+    { id: 7, title: '小王子', author: '圣埃克苏佩里', cover: '小王子', cls: 'c2', notes: 21, status: 'finished', cat: '文学', hasNew: false, fav: false },
+    { id: 8, title: '红楼梦', author: '曹雪芹', cover: '红楼梦', cls: 'c4', notes: 156, status: 'finished', cat: '文学', hasNew: true, fav: true },
   ];
 
   const selected = new Set();
 
+  // 当前侧栏筛选 + 搜索词
+  let currentFilter = { type: 'all' };
+  let searchQuery = '';
+
+  const filterFns = {
+    all: () => true,
+    reading: b => b.status === 'reading',
+    finished: b => b.status === 'finished',
+    fav: b => b.fav,
+    noted: b => b.notes > 0,
+    new: b => b.hasNew,
+    cat: b => b.cat === currentFilter.cat,
+  };
+
+  function visibleBooks() {
+    const q = searchQuery.trim().toLowerCase();
+    return books.filter(b =>
+      filterFns[currentFilter.type](b) &&
+      (q === '' || (b.title + b.author + b.cat).toLowerCase().includes(q))
+    );
+  }
+
   function render() {
-    document.getElementById('bookList').innerHTML = books.map(b => `
+    const visible = visibleBooks();
+    document.getElementById('bookList').innerHTML = visible.length === 0
+      ? '<div class="empty-state">没有匹配的书籍</div>'
+      : visible.map(b => `
       <div class="book-row ${selected.has(b.id) ? 'selected' : ''}" onclick="toggle(${b.id})">
         <div class="book-check"></div>
         <div class="book-cover ${b.cls}">${b.cover}</div>
@@ -1010,7 +1229,7 @@ tags: [读书笔记, 社科]
     const noteCount = sel.reduce((s, b) => s + b.notes, 0);
     document.getElementById('footerBooks').textContent = sel.length;
     document.getElementById('footerNotes').textContent = noteCount;
-    document.getElementById('footerSize').textContent = Math.max(1, Math.round(noteCount * 0.4));
+    document.getElementById('footerSize').textContent = sel.length === 0 ? 0 : Math.max(1, Math.round(noteCount * 0.4));
     const btn = document.getElementById('exportBtn');
     btn.disabled = sel.length === 0;
     btn.textContent = sel.length === 0 ? '选择书籍后导出' : `导出 ${sel.length} 本（${noteCount} 条）`;
@@ -1022,11 +1241,106 @@ tags: [读书笔记, 社科]
     render();
   }
 
-  let popoverOpen = true;
-  function togglePopover() {
-    popoverOpen = !popoverOpen;
-    document.getElementById('popover').style.display = popoverOpen ? 'block' : 'none';
+  /* —— 菜单栏气泡 —— */
+  let popoverOpen = false;
+  function setPopover(open) {
+    popoverOpen = open;
+    document.getElementById('popover').style.display = open ? 'block' : 'none';
+    document.getElementById('menubarIcon').classList.toggle('active', open);
   }
+  function toggleMenuPopover(e) {
+    if (e) e.stopPropagation();
+    setPopover(!popoverOpen);
+  }
+  function closePopover() { setPopover(false); }
+
+  // 点击气泡外任意处 / 按 Esc 关闭（还原 macOS 行为）
+  document.addEventListener('click', e => {
+    if (popoverOpen && !document.getElementById('popover').contains(e.target)) closePopover();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closePopover();
+  });
+
+  /* —— HUD 提示（代替真实系统行为） —— */
+  let hudTimer = null;
+  function showHud(msg) {
+    const hud = document.getElementById('hud');
+    hud.textContent = msg;
+    hud.classList.add('show');
+    clearTimeout(hudTimer);
+    hudTimer = setTimeout(() => hud.classList.remove('show'), 1800);
+  }
+
+  /* —— 同步（模拟） —— */
+  let syncing = false;
+  function doSync() {
+    if (syncing) return;
+    syncing = true;
+    const pill = document.getElementById('syncPill');
+    const pop = document.getElementById('popSyncStatus');
+    pill.textContent = '正在同步…';
+    pop.textContent = '同步中';
+    setTimeout(() => {
+      pill.textContent = '宁窕 · 已连接';
+      pop.textContent = '已同步';
+      document.getElementById('popLastSync').textContent = '刚刚';
+      document.getElementById('mainMeta').textContent = '最近同步：刚刚 · ⌘R 刷新';
+      showHud('同步完成：3 本书有新笔记');
+      syncing = false;
+    }, 1200);
+  }
+
+  /* —— 导出（模拟） —— */
+  function doExport() {
+    const sel = books.filter(b => selected.has(b.id));
+    if (sel.length === 0) { showHud('请先在列表中勾选书籍'); return; }
+    const noteCount = sel.reduce((s, b) => s + b.notes, 0);
+    showHud(`已导出 ${sel.length} 本（${noteCount} 条笔记）到 ~/Documents/Obsidian/Reading`);
+  }
+  document.getElementById('exportBtn').addEventListener('click', doExport);
+
+  /* —— 侧栏筛选 —— */
+  document.querySelectorAll('.sb-item[data-filter]').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.sb-item.active').forEach(a => a.classList.remove('active'));
+      el.classList.add('active');
+      currentFilter = { type: el.dataset.filter, cat: el.dataset.cat };
+      document.getElementById('mainTitle').textContent = el.dataset.label;
+      render();
+    });
+  });
+
+  /* —— 搜索 —— */
+  document.getElementById('searchInput').addEventListener('input', e => {
+    searchQuery = e.target.value;
+    render();
+  });
+
+  /* —— 右侧标签页 / 模板卡 / 开关 —— */
+  document.querySelectorAll('.preview-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      document.getElementById('pane-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+  document.querySelectorAll('.tpl-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.tpl-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+  });
+  document.querySelectorAll('.opt-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const t = row.querySelector('.toggle');
+      if (t) t.classList.toggle('on');
+    });
+  });
+  document.querySelector('.auto-sync-title .toggle').addEventListener('click', e => {
+    e.target.classList.toggle('on');
+  });
 
   render();
 </script>
